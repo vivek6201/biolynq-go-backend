@@ -6,6 +6,7 @@ import (
 	"html/template"
 )
 
+//go:embed *.html
 var templateFiles embed.FS
 
 // RenderTemplate parses any requested HTML template file and injects the provided data.

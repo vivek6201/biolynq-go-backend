@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/vivek6201/biolynq/internal/config"
 	"github.com/vivek6201/biolynq/internal/database"
 )
@@ -36,6 +37,8 @@ func StartServer(cfg *config.ConfigVar) {
 		},
 	})
 
+	app.Use(recover.New())
+
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "https://app.biolynq.in"},
 		AllowCredentials: true,
@@ -44,7 +47,6 @@ func StartServer(cfg *config.ConfigVar) {
 
 	api := app.Group("/api")
 	SetupRoutes(api, db, rdb, cfg)
-
 	if err := app.Listen(":" + cfg.PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

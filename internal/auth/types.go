@@ -24,7 +24,7 @@ type CompleteOnBoardingPayload struct {
 	TempUserId string `json:"temp_user_id" validate:"required"`
 	Username   string `json:"username" validate:"required,min=3,max=30"`
 	IPAddress  string `json:"ip_address" validate:"omitempty,ip"`
-	UserAgent  string `json:"user_agent" validate:"omitempty,text"`
+	UserAgent  string `json:"user_agent" validate:"omitempty"`
 }
 
 type CheckUsernamePayload struct {
