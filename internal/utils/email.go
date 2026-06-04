@@ -3,10 +3,10 @@ package utils
 import "github.com/resend/resend-go/v3"
 
 type EmailParams struct {
-	To          []string
-	From        string
-	Subject     string
-	HtmlContent string
+	To      []string
+	From    string
+	Subject string
+	Content string
 }
 
 type EmailSender struct {
@@ -26,7 +26,7 @@ func (s *EmailSender) SendEmail(params *EmailParams) error {
 		From:    params.From,
 		To:      params.To,
 		Subject: params.Subject,
-		Html:    params.HtmlContent,
+		Html:    params.Content,
 	}
 
 	if _, err := client.Emails.Send(request); err != nil {
