@@ -1,0 +1,41 @@
+# Development stage
+FROM golang:1.26.4-alpine AS dev
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache git build-base
+
+# Copy dependency definition files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source code
+COPY . .
+
+# In dev, we can just run the worker using go run, or build it
+CMD ["go", "run", "./cmd/worker/main.go"]
+
+# Production builder stage
+FROM golang:1.26.4-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/worker ./cmd/worker/main.go
+
+# Production runtime stage
+FROM alpine:latest AS prod
+
+WORKDIR /app
+
+# Install ca-certificates
+RUN apk --no-cache add ca-certificates
+
+COPY --from=builder /app/worker .
+
+CMD ["./worker"]

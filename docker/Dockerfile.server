@@ -1,0 +1,51 @@
+# Development stage
+FROM golang:1.26.4-alpine AS dev
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache git build-base
+
+# Install Air for live reloading
+RUN go install github.com/air-verse/air@latest
+
+# Copy dependency definition files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source code
+COPY . .
+
+# Run Air using the configured .air.toml
+CMD ["air", "-c", ".air.toml"]
+
+# Production builder stage
+FROM golang:1.26.4-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/server ./cmd/server/main.go
+
+# Production runtime stage
+FROM alpine:latest AS prod
+
+WORKDIR /app
+
+# Install ca-certificates, curl, and bash
+RUN apk --no-cache add ca-certificates curl bash
+
+# Install Atlas CLI
+RUN curl -sSf https://atlasgo.sh | sh -s -- --yes
+
+COPY --from=builder /app/server .
+COPY migrations ./migrations
+
+EXPOSE 8000
+
+# Run pending migrations first, then start the server
+CMD ["sh", "-c", "atlas migrate apply --url \"$DB_URL\" --dir \"file://migrations\" && ./server"]

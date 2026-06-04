@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/vivek6201/biolynq/internal/config"
+	"github.com/vivek6201/biolynq/internal/database"
 )
 
 type StructValidator struct {
@@ -18,6 +19,11 @@ func (v *StructValidator) Validate(obj any) error {
 }
 
 func StartServer(cfg *config.ConfigVar) {
+	db, err := database.ConnectDB(cfg.DB_URL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
 	app := fiber.New(fiber.Config{
 		CaseSensitive:  true,
 		StrictRouting:  true,
@@ -35,7 +41,7 @@ func StartServer(cfg *config.ConfigVar) {
 	}))
 
 	api := app.Group("/api")
-	SetupRoutes(api)
+	SetupRoutes(api, db, cfg)
 
 	if err := app.Listen(":" + cfg.PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

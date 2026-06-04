@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: biolynq_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: biolynq_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d biolynq_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: biolynq_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.server
+      target: dev
+    container_name: biolynq_server
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/tmp  # Exclude local tmp folder from mounting if needed, or allow it
+    environment:
+      - PORT=8000
+      - DB_URL=postgres://postgres:postgres@postgres:5432/biolynq_db?sslmode=disable
+      - REDIS_URL=redis:6379
+      - JWT_SECRET=super-secret-biolynq-auth-jwt-token-key-change-in-production
+      - GOOGLE_REDIRECT_URL=http://localhost:8000/api/v1/auth/google/callback
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+      target: dev
+    container_name: biolynq_worker
+    volumes:
+      - .:/app
+    environment:
+      - DB_URL=postgres://postgres:postgres@postgres:5432/biolynq_db?sslmode=disable
+      - REDIS_URL=redis:6379
+      - JWT_SECRET=super-secret-biolynq-auth-jwt-token-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
