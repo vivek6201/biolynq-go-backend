@@ -24,6 +24,8 @@ func StartServer(cfg *config.ConfigVar) {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	rdb, err := database.ConnectRedis(cfg.REDIS_URL)
+
 	app := fiber.New(fiber.Config{
 		CaseSensitive:  true,
 		StrictRouting:  true,
@@ -41,7 +43,7 @@ func StartServer(cfg *config.ConfigVar) {
 	}))
 
 	api := app.Group("/api")
-	SetupRoutes(api, db, cfg)
+	SetupRoutes(api, db, rdb, cfg)
 
 	if err := app.Listen(":" + cfg.PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
