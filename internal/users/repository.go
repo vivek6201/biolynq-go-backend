@@ -1,6 +1,8 @@
 package users
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/vivek6201/biolynq/internal/models"
@@ -123,4 +125,12 @@ func (r *UserRepository) GetProfileByUsername(username string) (*models.Profile,
 		return nil, err
 	}
 	return &profile, nil
+}
+
+func (r *UserRepository) GetSession(sessionID string) (*models.Session, error) {
+	var session models.Session
+	if err := r.db.Where("id = ? AND expires_at > ?", sessionID, time.Now()).First(&session).Error; err != nil {
+		return nil, err
+	}
+	return &session, nil
 }

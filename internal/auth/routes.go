@@ -2,7 +2,7 @@ package auth
 
 import "github.com/gofiber/fiber/v3"
 
-func RegisterRoute(r fiber.Router, handler IAuthHandler) {
+func RegisterRoute(r fiber.Router, handler IAuthHandler, authMiddleware fiber.Handler) {
 	authRoutes := r.Group("/auth")
 	{
 		authRoutes.Post("/otp/send", handler.SendOTPHandler)
@@ -11,6 +11,6 @@ func RegisterRoute(r fiber.Router, handler IAuthHandler) {
 		authRoutes.Get("/google/callback", handler.GoogleCallbackHandler)
 		authRoutes.Post("/register/complete", handler.CompleteRegisterHandler)
 		authRoutes.Post("/check-username", handler.CheckUsernameHandler)
-		// authRoutes.Post("/logout", authMiddleware, handler.LogoutHandler)
+		authRoutes.Post("/logout", authMiddleware, handler.LogoutHandler)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/requestid"
 )
 
 type GenericResponse struct {
@@ -55,8 +56,5 @@ func SendError(c fiber.Ctx, status int, message string, errDetails interface{}) 
 }
 
 func getRequestID(c fiber.Ctx) string {
-	if reqID, ok := c.Locals("requestID").(string); ok && reqID != "" {
-		return reqID
-	}
-	return c.Get("X-Request-ID")
+	return requestid.FromContext(c)
 }

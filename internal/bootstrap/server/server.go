@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/recover"
+	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/vivek6201/biolynq/internal/config"
 	"github.com/vivek6201/biolynq/internal/database"
 )
@@ -38,6 +39,7 @@ func StartServer(cfg *config.ConfigVar) {
 	})
 
 	app.Use(recover.New())
+	app.Use(requestid.New())
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "https://app.biolynq.in"},

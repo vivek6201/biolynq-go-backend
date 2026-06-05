@@ -58,3 +58,7 @@ func (s *UserService) GetProfile(userID uuid.UUID) (*models.Profile, error) {
 func (s *UserService) GetProfileByUsername(username string) (*models.Profile, error) {
 	return s.repo.GetProfileByUsername(username)
 }
+
+func (s *UserService) GetSession(sessionID string) (*models.Session, error) {
+	return s.repo.GetSession(sessionID)
+}
