@@ -22,7 +22,7 @@ func SetupRoutes(r fiber.Router, db *gorm.DB, rdb *redis.Client, cfg *config.Con
 
 	// Initialize user components first
 	userRepo := users.NewUserRepository(db, rdb)
-	userService := users.NewUserService(userRepo)
+	userService := users.NewUserService(userRepo, taskDistributor)
 	userHandler := users.NewUserHandler(userService, cfg)
 
 	// Auth Middleware
@@ -38,11 +38,16 @@ func SetupRoutes(r fiber.Router, db *gorm.DB, rdb *redis.Client, cfg *config.Con
 	linksService := links.NewLinkService(linksRepo, userService, taskDistributor)
 	linksHandler := links.NewLinkHandler(linksService, cfg)
 
+	// Initialize analytics components
+	analyticsRepo := analytics.NewAnalyticsRepository(db)
+	analyticsService := analytics.NewAnalyticsService(analyticsRepo, userService, taskDistributor)
+	analyticsHandler := analytics.NewAnalyticsHandler(analyticsService, cfg)
+
 	v1 := r.Group("v1")
 	{
 		users.RegisterRoute(v1, userHandler, authMiddleware)
 		auth.RegisterRoute(v1, authHandler, authMiddleware)
 		links.RegisterRoute(v1, linksHandler, authMiddleware)
-		analytics.RegisterRoute(v1)
+		analytics.RegisterRoute(v1, analyticsHandler, authMiddleware)
 	}
 }

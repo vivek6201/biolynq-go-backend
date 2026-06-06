@@ -12,6 +12,6 @@ func RegisterRoute(r fiber.Router, handler IUserHandler, authMiddleware fiber.Ha
 
 	publicUserRoutes := r.Group("/public")
 	{
-		publicUserRoutes.Get("/profile/:username", handler.GetPublicProfileHandler)
+		publicUserRoutes.Get("/:username", handler.GetPublicProfileHandler)
 	}
 }

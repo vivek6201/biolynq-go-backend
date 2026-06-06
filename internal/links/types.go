@@ -10,6 +10,7 @@ type LinkResponse struct {
 	IconURL     string    `json:"icon_url"`
 	Position    int       `json:"position"`
 	IsActive    bool      `json:"is_active"`
+	IsSocial    bool      `json:"is_social"`
 }
 
 type CreateLinkRequest struct {
@@ -19,6 +20,7 @@ type CreateLinkRequest struct {
 	IconURL     string `json:"icon_url" `
 	Position    int    `json:"position" validate:"omitempty,number"`
 	IsActive    bool   `json:"is_active" validate:"omitempty,boolean"`
+	IsSocial    bool   `json:"is_social" validate:"omitempty,boolean"`
 }
 
 type UpdateLinkRequest struct {
@@ -28,4 +30,5 @@ type UpdateLinkRequest struct {
 	IconURL     string `json:"icon_url" validate:"omitempty,url"`
 	Position    int    `json:"position" validate:"omitempty,number"`
 	IsActive    bool   `json:"is_active" validate:"omitempty,boolean"`
+	IsSocial    bool   `json:"is_social" validate:"omitempty,boolean"`
 }

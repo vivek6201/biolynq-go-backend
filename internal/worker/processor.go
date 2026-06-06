@@ -7,28 +7,28 @@ import (
 
 	"github.com/hibiken/asynq"
 	"github.com/vivek6201/biolynq/internal/utils"
-	"gorm.io/gorm"
 )
 
 type TaskProcessor interface {
 	Start() error
-	ProcessTaskSendEmail(ctx context.Context, task *asynq.Task) error
+	RegisterHandler(taskType string, handler asynq.HandlerFunc)
 }
 
 type RedisTaskProcessor struct {
 	server      *asynq.Server
 	emailSender *utils.EmailSender
-	db          *gorm.DB
+	mux         *asynq.ServeMux
 }
 
 func (r *RedisTaskProcessor) Start() error {
-	mux := asynq.NewServeMux()
-	mux.HandleFunc(TaskSendEmail, r.ProcessTaskSendEmail)
-
-	return r.server.Run(mux)
+	return r.server.Run(r.mux)
 }
 
-func NewRedisTaskProcessor(opts asynq.RedisClientOpt, emailSender *utils.EmailSender, db *gorm.DB) TaskProcessor {
+func (r *RedisTaskProcessor) RegisterHandler(taskType string, handler asynq.HandlerFunc) {
+	r.mux.HandleFunc(taskType, handler)
+}
+
+func NewRedisTaskProcessor(opts asynq.RedisClientOpt, emailSender *utils.EmailSender) TaskProcessor {
 	server := asynq.NewServer(
 		opts,
 		asynq.Config{
@@ -38,12 +38,17 @@ func NewRedisTaskProcessor(opts asynq.RedisClientOpt, emailSender *utils.EmailSe
 			},
 		},
 	)
+	mux := asynq.NewServeMux()
 
-	return &RedisTaskProcessor{
+	processor := &RedisTaskProcessor{
 		server:      server,
 		emailSender: emailSender,
-		db:          db,
+		mux:         mux,
 	}
+
+	mux.HandleFunc(TaskSendEmail, processor.ProcessTaskSendEmail)
+
+	return processor
 }
 
 func (r *RedisTaskProcessor) ProcessTaskSendEmail(ctx context.Context, task *asynq.Task) error {

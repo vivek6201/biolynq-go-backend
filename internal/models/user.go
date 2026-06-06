@@ -41,6 +41,8 @@ type Profile struct {
 	Theme    string `gorm:"size:50;default:'default'" json:"theme"`
 	IsPublic bool   `gorm:"default:true" json:"is_public"`
 
+	Links []Link `json:"links,omitempty" gorm:"foreignKey:ProfileID"`
+
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

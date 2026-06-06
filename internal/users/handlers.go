@@ -2,6 +2,7 @@ package users
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -107,5 +108,25 @@ func (h *UserHandler) GetPublicProfileHandler(c fiber.Ctx) error {
 		return utils.SendError(c, fiber.StatusInternalServerError, "Failed to fetch profile", err)
 	}
 
+	// Capture client metadata and trigger asynchronous profile view event
+	ip := getClientIP(c)
+	userAgent := c.Get("User-Agent")
+	referrer := c.Get("Referer")
+
+	h.service.TrackProfileViewAsync(c.Context(), profile.ID, ip, userAgent, referrer)
+
 	return utils.SendSuccess(c, fiber.StatusOK, "Profile retrieved successfully", profile)
+}
+
+func getClientIP(c fiber.Ctx) string {
+	forwarded := c.Get("X-Forwarded-For")
+	if forwarded != "" {
+		parts := strings.Split(forwarded, ",")
+		return strings.TrimSpace(parts[0])
+	}
+	realIP := c.Get("X-Real-IP")
+	if realIP != "" {
+		return realIP
+	}
+	return c.IP()
 }

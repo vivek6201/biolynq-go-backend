@@ -1,12 +1,17 @@
 package users
 
 import (
+	"context"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/vivek6201/biolynq/internal/models"
+	"github.com/vivek6201/biolynq/internal/worker"
 )
 
 type UserService struct {
-	repo IUserRepository
+	repo   IUserRepository
+	worker worker.TaskDistributor
 }
 
 type IUserService interface {
@@ -22,11 +27,13 @@ type IUserService interface {
 	GetProfile(userID uuid.UUID) (*models.Profile, error)
 	GetProfileByUsername(username string) (*models.Profile, error)
 	GetSession(sessionID string) (*models.Session, error)
+	TrackProfileViewAsync(ctx context.Context, profileID uuid.UUID, ip, userAgent, referrer string)
 }
 
-func NewUserService(userRepo IUserRepository) IUserService {
+func NewUserService(userRepo IUserRepository, worker worker.TaskDistributor) IUserService {
 	return &UserService{
-		repo: userRepo,
+		repo:   userRepo,
+		worker: worker,
 	}
 }
 
@@ -76,4 +83,17 @@ func (s *UserService) GetProfileByUsername(username string) (*models.Profile, er
 
 func (s *UserService) GetSession(sessionID string) (*models.Session, error) {
 	return s.repo.GetSession(sessionID)
+}
+
+func (s *UserService) TrackProfileViewAsync(ctx context.Context, profileID uuid.UUID, ip, userAgent, referrer string) {
+	payload := &worker.RecordEventPayload{
+		EventType: models.EventTypeProfileView,
+		ProfileID: profileID,
+		IP:        ip,
+		UserAgent: userAgent,
+		Referrer:  referrer,
+		ClickedAt: time.Now(),
+	}
+
+	_ = s.worker.DistributeTaskRecordEvent(ctx, payload)
 }

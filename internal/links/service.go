@@ -56,6 +56,7 @@ func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*
 		IconURL:     req.IconURL,
 		Position:    req.Position,
 		IsActive:    req.IsActive,
+		IsSocial:    req.IsSocial,
 	}
 
 	if err := s.repo.CreateLink(link); err != nil {
@@ -70,6 +71,7 @@ func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*
 		IconURL:     link.IconURL,
 		Position:    link.Position,
 		IsActive:    link.IsActive,
+		IsSocial:    link.IsSocial,
 	}, nil
 }
 

@@ -1,3 +1,4 @@
-h1:bn9Wbg2ggLqR0aO8lurDSxyvb5xQPBfu4Zef1B8k4n0=
+h1:ryBH8snTzOeUAClaiO+O1oYZ50OjPRi7zjIVfinhzMM=
 20260604064435_init.sql h1:nSHCqRwxm1ihU+n9ZurAxEoUq4YUvhwEckKOOHaJ7Kw=
 20260605072534_add_links.sql h1:RiIFgRxY54/K+JnGChH1ZR71hyipyLqxPQUj/w/pDdQ=
+20260606055041_normalize_analytics_events.sql h1:OJtAgl2ZatMb6rysxzTLsLI3x0j+FXyAbYC+sifPxqU=

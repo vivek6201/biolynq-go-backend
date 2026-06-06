@@ -4,11 +4,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/vivek6201/biolynq/internal/models"
 )
 
 const (
 	TaskSendEmail   = "task:send_email"
-	TaskRecordClick = "task:record_click"
+	TaskRecordEvent = "task:record_event"
 )
 
 type SendEmailPayload struct {
@@ -18,15 +19,12 @@ type SendEmailPayload struct {
 	Content string   `json:"content"`
 }
 
-type RecordClickPayload struct {
-	LinkID    uuid.UUID `json:"link_id"`
-	IP        string    `json:"ip"`
-	UserAgent string    `json:"user_agent"`
-	Country   string    `json:"country"`
-	City      string    `json:"city"`
-	Browser   string    `json:"browser"`
-	OS        string    `json:"os"`
-	Device    string    `json:"device"`
-	Referrer  string    `json:"referrer"`
-	ClickedAt time.Time `json:"clicked_at"`
+type RecordEventPayload struct {
+	EventType models.EventType `json:"event_type"`
+	ProfileID uuid.UUID        `json:"profile_id"`
+	LinkID    *uuid.UUID       `json:"link_id,omitempty"`
+	IP        string           `json:"ip"`
+	UserAgent string           `json:"user_agent"`
+	Referrer  string           `json:"referrer"`
+	ClickedAt time.Time        `json:"clicked_at"`
 }
