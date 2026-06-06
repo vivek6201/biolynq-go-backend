@@ -16,6 +16,49 @@ Biolynq is a high-performance, Linktree-inspired link aggregation and creator da
 
 ---
 
+## High-Level Design (HLD)
+
+The Biolynq backend is built using a clean architecture split into two main runtime components: the **API REST Server** (handling user requests, authentication, CRUD, and quick redirects) and the **Background Task Worker** (handling heavy processes like user-agent parsing and geo-tracking database writes via a Redis queue).
+
+### System Architecture
+
+```mermaid
+graph TD
+    Client[Browser / Client CLI] -->|HTTP Requests| API[Fiber v3 API Server]
+    API -->|1. Immediate 303 Redirect / Success| Client
+    API -->|2. Async Payload| Redis[(Redis Queue / Asynq)]
+    
+    subgraph Background Processing
+        Redis -->|3. Fetch Task| Worker[Asynq Worker Processor]
+        Worker -->|4. Parse UA / Stub GeoIP| Worker
+        Worker -->|5. ACID Transaction Write| DB[(PostgreSQL Database)]
+    end
+    
+    API -->|Query Dashboard Stats| DB
+```
+
+### Core Workflows
+
+#### A. Public Link Click & Redirection Flow (Asynchronous)
+1. The **Client** requests the public redirection URL: `GET /api/v1/public/links/:linkID/redirect`.
+2. The **API Server** loads the link URL from the cache/database, prepares an event payload (including client IP, user-agent, and referrer), and immediately pushes it as a background task (`task:record_event`) to the **Redis Queue**.
+3. Simultaneously, the **API Server** returns an immediate `303 See Other` redirect headers to send the client browser to the destination URL (e.g. GitHub, personal site).
+4. The **Worker** picks up the task from **Redis**:
+   * It parses the User-Agent to extract browser, OS, and device type.
+   * It analyzes the IP to resolve location details (country and city).
+   * It saves the parsed visitor metadata and link click event inside a single **PostgreSQL Transaction** to ensure thread-safety and avoid primary key/unique key duplicate write conflicts.
+
+#### B. Creator Analytics Dashboard Aggregation Flow (Synchronous)
+1. The creator requests their analytics overview or breakdown: `GET /api/v1/analytics/overview` or `GET /api/v1/analytics/breakdown`.
+2. The **API Server** queries the database using optimized aggregate queries:
+   * **Total Clicks**: Computed dynamically on the fly by counting rows matching `event_type = 'link_click'` in the `analytic_events` table (saving database locks on the `links` table).
+   * **Unique Visitors**: Count of unique `visitor_metadata_id` values per profile.
+   * **Daily Views & Clicks**: Grouped by date formatted via database-level `TO_CHAR(clicked_at, 'YYYY-MM-DD')`.
+3. The server runs a date-filler service function to pad any missing days in the requested interval with `0` traffic count entries, ensuring clean graphs on the frontend.
+4. The server returns the final aggregates and time-series data to the client.
+
+---
+
 ## Features
 
 1. **Authentication Flows**
