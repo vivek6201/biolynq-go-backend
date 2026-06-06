@@ -10,6 +10,7 @@ import (
 	"github.com/vivek6201/biolynq/internal/links"
 	"github.com/vivek6201/biolynq/internal/middleware"
 	"github.com/vivek6201/biolynq/internal/users"
+	"github.com/vivek6201/biolynq/internal/utils"
 	"github.com/vivek6201/biolynq/internal/worker"
 	"gorm.io/gorm"
 )
@@ -39,8 +40,9 @@ func SetupRoutes(r fiber.Router, db *gorm.DB, rdb *redis.Client, cfg *config.Con
 	linksHandler := links.NewLinkHandler(linksService, cfg)
 
 	// Initialize analytics components
+	geoipService := utils.NewGeoIPService(cfg.GEOIP_DB_PATH)
 	analyticsRepo := analytics.NewAnalyticsRepository(db)
-	analyticsService := analytics.NewAnalyticsService(analyticsRepo, userService, taskDistributor)
+	analyticsService := analytics.NewAnalyticsService(analyticsRepo, userService, taskDistributor, geoipService)
 	analyticsHandler := analytics.NewAnalyticsHandler(analyticsService, cfg)
 
 	v1 := r.Group("v1")

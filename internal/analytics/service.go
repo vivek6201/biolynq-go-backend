@@ -9,6 +9,7 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/vivek6201/biolynq/internal/models"
 	"github.com/vivek6201/biolynq/internal/users"
+	"github.com/vivek6201/biolynq/internal/utils"
 	"github.com/vivek6201/biolynq/internal/worker"
 )
 
@@ -16,6 +17,7 @@ type AnalyticsService struct {
 	repo        IAnalyticsRepository
 	userService users.IUserService
 	worker      worker.TaskDistributor
+	geoip       *utils.GeoIPService
 }
 
 type IAnalyticsService interface {
@@ -29,11 +31,17 @@ type IAnalyticsService interface {
 	TrackClickAsync(ctx context.Context, link *models.Link, ip, userAgent, referrer string)
 }
 
-func NewAnalyticsService(repo IAnalyticsRepository, userService users.IUserService, worker worker.TaskDistributor) IAnalyticsService {
+func NewAnalyticsService(
+	repo IAnalyticsRepository,
+	userService users.IUserService,
+	worker worker.TaskDistributor,
+	geoip *utils.GeoIPService,
+) IAnalyticsService {
 	return &AnalyticsService{
 		repo:        repo,
 		userService: userService,
 		worker:      worker,
+		geoip:       geoip,
 	}
 }
 
@@ -186,14 +194,9 @@ func (s *AnalyticsService) RecordEvent(eventType models.EventType, profileID uui
 		deviceName = "Mobile"
 	}
 
-	// 2. Perform a simple GeoIP stub
-	country := "Unknown"
-	city := "Unknown"
+	// 2. Perform GeoIP lookup
 	clientIP := strings.TrimSpace(ip)
-	if clientIP == "127.0.0.1" || clientIP == "::1" || strings.ToLower(clientIP) == "localhost" {
-		country = "Local"
-		city = "Local"
-	}
+	country, city := s.geoip.Lookup(clientIP)
 
 	// 3. Prepare entities
 	metadata := &models.VisitorMetadata{
@@ -246,9 +249,9 @@ func fillMissingDates(rawItems []TimeSeriesItem, days int) []TimeSeriesItem {
 
 	result := make([]TimeSeriesItem, days)
 	now := time.Now()
-	for i := 0; i < days; i++ {
+	for i := range days {
 		dateStr := now.AddDate(0, 0, -1*(days-1-i)).Format("2006-01-02")
-		
+
 		count := int64(0)
 		if val, exists := itemMap[dateStr]; exists {
 			count = val

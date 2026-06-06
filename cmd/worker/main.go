@@ -34,10 +34,11 @@ func main() {
 	emailSender := utils.NewEmailSender(cfg.RESEND_KEY)
 
 	// Initialize dependencies for analytics service
+	geoipService := utils.NewGeoIPService(cfg.GEOIP_DB_PATH)
 	userRepo := users.NewUserRepository(db, nil)
 	userService := users.NewUserService(userRepo, nil)
 	analyticsRepo := analytics.NewAnalyticsRepository(db)
-	analyticsService := analytics.NewAnalyticsService(analyticsRepo, userService, nil)
+	analyticsService := analytics.NewAnalyticsService(analyticsRepo, userService, nil, geoipService)
 
 	processor := worker.NewRedisTaskProcessor(redisOpts, emailSender)
 

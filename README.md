@@ -128,9 +128,26 @@ JWT_SECRET=your-secret-key
 GOOGLE_REDIRECT_URL=http://localhost:8000/api/v1/auth/google/callback
 FRONTEND_URL=http://localhost:3000
 RESEND_KEY=re_your_api_key_here
+GEOIP_DB_PATH=resources/geoip/GeoLite2-City.mmdb
 ```
 
-### 2. Start Services via Docker Compose
+### 2. GeoIP Database Setup (For Offline Geographic Tracking)
+The backend is configured to resolve IP addresses to Country and City names.
+
+* **Default Behavior (Zero Setup)**: If no database file is configured, the application automatically uses a free public HTTP GeoIP lookup API (`ip-api.com`) inside the background task worker.
+* **Production Recommendation (High Speed, Offline)**: To maximize redirection performance and avoid HTTP rate limits, you can download a local MaxMind database:
+  1. Sign up for a free MaxMind account at [MaxMind signup](https://www.maxmind.com/).
+  2. Download the **GeoLite2 City** binary database (ends in `.mmdb`).
+  3. Create the directory `resources/geoip/` in the project root:
+     ```bash
+     mkdir -p resources/geoip
+     ```
+  4. Place the downloaded `GeoLite2-City.mmdb` file inside the `resources/geoip/` directory. The application will detect and use it automatically on startup.
+
+
+
+
+### 3. Start Services via Docker Compose
 To build and spin up the PostgreSQL database, Redis instance, API server, and background worker:
 ```bash
 make docker-up
@@ -146,7 +163,7 @@ To stop services:
 make docker-down
 ```
 
-### 3. Running Locally (Development Mode)
+### 4. Running Locally (Development Mode)
 If you prefer running services directly on your machine:
 ```bash
 # Run API Server

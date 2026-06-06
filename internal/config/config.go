@@ -12,6 +12,7 @@ type ConfigVar struct {
 	FRONTEND_URL         string
 	JWT_SECRET           string
 	RESEND_KEY           string
+	GEOIP_DB_PATH        string
 }
 
 func LoadConfig() *ConfigVar {
@@ -25,6 +26,7 @@ func LoadConfig() *ConfigVar {
 		FRONTEND_URL:         getEnv("FRONTEND_URL", "http://localhost:3000"),
 		JWT_SECRET:           getEnv("JWT_SECRET", "super-secret-biolynq-auth-jwt-token-key-change-in-production"),
 		RESEND_KEY:           os.Getenv("RESEND_KEY"),
+		GEOIP_DB_PATH:        getEnv("GEOIP_DB_PATH", "resources/geoip/GeoLite2-City.mmdb"),
 	}
 }
 

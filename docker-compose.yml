@@ -47,6 +47,7 @@ services:
       - JWT_SECRET=super-secret-biolynq-auth-jwt-token-key-change-in-production
       - GOOGLE_REDIRECT_URL=http://localhost:8000/api/v1/auth/google/callback
       - FRONTEND_URL=http://localhost:3000
+      - GEOIP_DB_PATH=resources/geoip/GeoLite2-City.mmdb
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,12 +66,12 @@ services:
       - DB_URL=postgres://postgres:postgres@postgres:5432/biolynq_db?sslmode=disable
       - REDIS_URL=redis:6379
       - JWT_SECRET=super-secret-biolynq-auth-jwt-token-key-change-in-production
+      - GEOIP_DB_PATH=resources/geoip/GeoLite2-City.mmdb
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-
 volumes:
   postgres_data:
   redis_data:

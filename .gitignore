@@ -33,3 +33,6 @@ tmp/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# MaxMind GeoIP Databases
+resources/geoip/*.mmdb
