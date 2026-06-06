@@ -11,11 +11,18 @@ import (
 )
 
 type UserHandler struct {
-	service *UserService
+	service IUserService
 	cfg     *config.ConfigVar
 }
 
-func NewUserHandler(service *UserService, cfg *config.ConfigVar) *UserHandler {
+type IUserHandler interface {
+	GetUserHandler(c fiber.Ctx) error
+	GetProfileHandler(c fiber.Ctx) error
+	UpdateProfileHandler(c fiber.Ctx) error
+	GetPublicProfileHandler(c fiber.Ctx) error
+}
+
+func NewUserHandler(service IUserService, cfg *config.ConfigVar) IUserHandler {
 	return &UserHandler{
 		service: service,
 		cfg:     cfg,

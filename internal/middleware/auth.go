@@ -11,7 +11,7 @@ import (
 )
 
 // AuthRequired protects routes by validating the user's session
-func AuthRequired(userService *users.UserService) fiber.Handler {
+func AuthRequired(userService users.IUserService) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		var sessionID string
 
@@ -21,8 +21,8 @@ func AuthRequired(userService *users.UserService) fiber.Handler {
 		// 2. Fall back to Authorization Header (Bearer Token) if Cookie is empty
 		if sessionID == "" {
 			authHeader := c.Get("Authorization")
-			if strings.HasPrefix(authHeader, "Bearer ") {
-				sessionID = strings.TrimPrefix(authHeader, "Bearer ")
+			if after, ok := strings.CutPrefix(authHeader, "Bearer "); ok {
+				sessionID = after
 			}
 		}
 

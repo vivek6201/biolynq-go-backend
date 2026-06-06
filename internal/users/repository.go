@@ -14,7 +14,22 @@ type UserRepository struct {
 	rdb *redis.Client
 }
 
-func NewUserRepository(db *gorm.DB, rdb *redis.Client) *UserRepository {
+type IUserRepository interface {
+	FindUserByEmail(email string) (*models.User, error)
+	FindUserById(id uuid.UUID) (*models.User, error)
+	CreateUser(user *models.User) error
+	CreateTempUser(tempUser *models.TempUser) error
+	UpdateTempUser(tempUser *models.TempUser) error
+	GetTempUserByID(id uuid.UUID) (*models.TempUser, error)
+	GetTempUserByEmail(email string) (*models.TempUser, error)
+	CreateUserFromTempUser(user *models.User, tempUserID uuid.UUID, username string) error
+	UpdateProfile(userID uuid.UUID, data UpdateProfileRequest) (*models.Profile, error)
+	GetProfile(userID uuid.UUID) (*models.Profile, error)
+	GetProfileByUsername(username string) (*models.Profile, error)
+	GetSession(sessionID string) (*models.Session, error)
+}
+
+func NewUserRepository(db *gorm.DB, rdb *redis.Client) IUserRepository {
 	return &UserRepository{
 		db:  db,
 		rdb: rdb,

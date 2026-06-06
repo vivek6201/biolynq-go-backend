@@ -6,10 +6,25 @@ import (
 )
 
 type UserService struct {
-	repo *UserRepository
+	repo IUserRepository
 }
 
-func NewUserService(userRepo *UserRepository) *UserService {
+type IUserService interface {
+	FindUserByEmail(email string) (*models.User, error)
+	GetUserByID(id uuid.UUID) (*models.User, error)
+	CreateUser(user *models.User) error
+	CreateTempUser(tempUser *models.TempUser) error
+	UpdateTempUser(tempUser *models.TempUser) error
+	GetTempUserByID(id uuid.UUID) (*models.TempUser, error)
+	GetTempUserByEmail(email string) (*models.TempUser, error)
+	CompleteOnboarding(user *models.User, tempUserID uuid.UUID, username string) error
+	UpdateProfile(userID uuid.UUID, data UpdateProfileRequest) (*models.Profile, error)
+	GetProfile(userID uuid.UUID) (*models.Profile, error)
+	GetProfileByUsername(username string) (*models.Profile, error)
+	GetSession(sessionID string) (*models.Session, error)
+}
+
+func NewUserService(userRepo IUserRepository) IUserService {
 	return &UserService{
 		repo: userRepo,
 	}

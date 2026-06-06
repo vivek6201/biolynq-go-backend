@@ -21,7 +21,7 @@ import (
 
 type AuthService struct {
 	repo            IAuthRepository
-	userService     *users.UserService
+	userService     users.IUserService
 	taskDistributor worker.TaskDistributor
 	oauthConfig     *oauth2.Config
 }
@@ -37,7 +37,7 @@ type IAuthService interface {
 	RevokeSession(sessionID string) error
 }
 
-func NewAuthService(repo IAuthRepository, userService *users.UserService, distributor worker.TaskDistributor, cfg *config.ConfigVar) IAuthService {
+func NewAuthService(repo IAuthRepository, userService users.IUserService, distributor worker.TaskDistributor, cfg *config.ConfigVar) IAuthService {
 	return &AuthService{
 		repo:            repo,
 		userService:     userService,

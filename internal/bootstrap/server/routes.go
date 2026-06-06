@@ -20,21 +20,29 @@ func SetupRoutes(r fiber.Router, db *gorm.DB, rdb *redis.Client, cfg *config.Con
 	}
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpts)
 
+	// Initialize user components first
 	userRepo := users.NewUserRepository(db, rdb)
 	userService := users.NewUserService(userRepo)
 	userHandler := users.NewUserHandler(userService, cfg)
 
+	// Auth Middleware
+	authMiddleware := middleware.AuthRequired(userService)
+
+	// Initialize auth components
 	authRepo := auth.NewAuthRepository(db, rdb)
 	authService := auth.NewAuthService(authRepo, userService, taskDistributor, cfg)
 	authHandler := auth.NewAuthHandler(authService, cfg)
 
-	authMiddleware := middleware.AuthRequired(userService)
+	// Initialize links components
+	linksRepo := links.NewLinkRepository(db, rdb)
+	linksService := links.NewLinkService(linksRepo, userService, taskDistributor)
+	linksHandler := links.NewLinkHandler(linksService, cfg)
 
 	v1 := r.Group("v1")
 	{
 		users.RegisterRoute(v1, userHandler, authMiddleware)
 		auth.RegisterRoute(v1, authHandler, authMiddleware)
-		links.RegisterRoute(v1)
+		links.RegisterRoute(v1, linksHandler, authMiddleware)
 		analytics.RegisterRoute(v1)
 	}
 }

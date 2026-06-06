@@ -2,7 +2,7 @@ package users
 
 import "github.com/gofiber/fiber/v3"
 
-func RegisterRoute(r fiber.Router, handler *UserHandler, authMiddleware fiber.Handler) {
+func RegisterRoute(r fiber.Router, handler IUserHandler, authMiddleware fiber.Handler) {
 	userRoutes := r.Group("/users", authMiddleware)
 	{
 		userRoutes.Get("/", handler.GetUserHandler)
