@@ -16,30 +16,27 @@ import (
 )
 
 func SetupRoutes(r fiber.Router, db *gorm.DB, rdb *redis.Client, cfg *config.ConfigVar) {
-	redisOpts := asynq.RedisClientOpt{
-		Addr: cfg.REDIS_URL,
-	}
+	redisOpts := asynq.RedisClientOpt{Addr: cfg.REDIS_URL}
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpts)
 
-	// Initialize user components first
+	// ── Users ─────────────────────────────────────────────────────────────────
 	userRepo := users.NewUserRepository(db, rdb)
-	userService := users.NewUserService(userRepo, taskDistributor)
+	userService := users.NewUserService(userRepo, taskDistributor, users.NewCaches(rdb))
 	userHandler := users.NewUserHandler(userService, cfg)
 
-	// Auth Middleware
 	authMiddleware := middleware.AuthRequired(userService)
 
-	// Initialize auth components
+	// ── Auth ──────────────────────────────────────────────────────────────────
 	authRepo := auth.NewAuthRepository(db, rdb)
 	authService := auth.NewAuthService(authRepo, userService, taskDistributor, cfg)
 	authHandler := auth.NewAuthHandler(authService, cfg)
 
-	// Initialize links components
+	// ── Links ─────────────────────────────────────────────────────────────────
 	linksRepo := links.NewLinkRepository(db, rdb)
-	linksService := links.NewLinkService(linksRepo, userService, taskDistributor)
+	linksService := links.NewLinkService(linksRepo, userService, taskDistributor, links.NewCaches(rdb))
 	linksHandler := links.NewLinkHandler(linksService, cfg)
 
-	// Initialize analytics components
+	// ── Analytics ─────────────────────────────────────────────────────────────
 	geoipService := utils.NewGeoIPService(cfg.GEOIP_DB_PATH)
 	analyticsRepo := analytics.NewAnalyticsRepository(db)
 	analyticsService := analytics.NewAnalyticsService(analyticsRepo, userService, taskDistributor, geoipService)

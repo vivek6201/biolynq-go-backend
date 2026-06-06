@@ -189,8 +189,12 @@ func (s *AuthService) handleUserVerification(email string, provider string, ip s
 		LastRotatedAt: time.Now(),
 	}
 
-	if err := s.repo.CreateSession(session); err != nil {
+	evictedIDs, err := s.repo.CreateSession(session)
+	if err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+	if len(evictedIDs) > 0 {
+		s.userService.InvalidateSessionCache(evictedIDs...)
 	}
 
 	return &VerificationResult{
@@ -263,8 +267,12 @@ func (s *AuthService) CompleteOnBoarding(payload CompleteOnBoardingPayload) (*Se
 		LastRotatedAt: time.Now(),
 	}
 
-	if err := s.repo.CreateSession(session); err != nil {
+	evictedIDs, err := s.repo.CreateSession(session)
+	if err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+	if len(evictedIDs) > 0 {
+		s.userService.InvalidateSessionCache(evictedIDs...)
 	}
 
 	return &SessionResult{
@@ -278,7 +286,12 @@ func (s *AuthService) RevokeSession(sessionID string) error {
 	if sessionID == "" {
 		return errors.New("session ID is required")
 	}
-	return s.repo.DeleteSession(sessionID)
+	if err := s.repo.DeleteSession(sessionID); err != nil {
+		return err
+	}
+	// Evict from cache at the service layer — repository only handles DB
+	s.userService.InvalidateSessionCache(sessionID)
+	return nil
 }
 
 func (s *AuthService) CheckUsername(username string) (bool, error) {
