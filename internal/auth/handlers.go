@@ -148,7 +148,7 @@ func (h *AuthHandler) GoogleCallbackHandler(c fiber.Ctx) error {
 
 	if !result.Registered {
 		// New user signup: Redirect to select username on frontend
-		redirectURL := h.cfg.FRONTEND_URL + "/auth?temp_user_id=" + result.TempUserID.String() + "&registered=false"
+		redirectURL := h.cfg.FRONTEND_URL + "/get-started?temp_user_id=" + result.TempUserID.String() + "&registered=false"
 		return c.Redirect().To(redirectURL)
 	}
 
@@ -162,7 +162,7 @@ func (h *AuthHandler) GoogleCallbackHandler(c fiber.Ctx) error {
 		Expires:  result.ExpiresAt,
 	})
 
-	redirectURL := h.cfg.FRONTEND_URL + "/auth/callback?session_id=" + result.SessionID + "&registered=true"
+	redirectURL := h.cfg.FRONTEND_URL + "/get-started?session_id=" + result.SessionID + "&registered=true"
 	return c.Redirect().To(redirectURL)
 
 }
