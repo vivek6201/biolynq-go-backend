@@ -7,21 +7,21 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Email        string    `gorm:"size:255;uniqueIndex;not null"`
-	PasswordHash string    `gorm:"default:null"`
+	ID           uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Email        string    `json:"email" gorm:"size:255;uniqueIndex;not null"`
+	PasswordHash string    `json:"-" gorm:"default:null"`
 
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 type TempUser struct {
-	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Email       string    `gorm:"size:255;uniqueIndex;not null"`
-	DisplayName string    `gorm:"size:100"`
-	AvatarURL   string
-	Provider    string `gorm:"size:20;default:'email_otp'"` // "google" or "email_otp"
-	IsExpired   bool   `gorm:"default:false"`
+	ID          uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Email       string    `json:"email" gorm:"size:255;uniqueIndex;not null"`
+	DisplayName string    `json:"display_name" gorm:"size:100"`
+	AvatarURL   string    `json:"avatar_url"`
+	Provider    string    `json:"provider" gorm:"size:20;default:'email_otp'"`
+	IsExpired   bool      `json:"is_expired" gorm:"default:false"`
 
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
@@ -30,7 +30,7 @@ type TempUser struct {
 type Profile struct {
 	ID uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 
-	UserID uuid.UUID `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
+	UserID uuid.UUID `gorm:"type:uuid;uniqueIndex;not null" json:"-"`
 	User   User      `gorm:"constraint:OnDelete:CASCADE;" json:"-"`
 
 	Username    string `gorm:"size:32;uniqueIndex;not null" json:"username"`
