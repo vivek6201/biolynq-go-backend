@@ -37,7 +37,7 @@ test:
 	go test -v ./...
 
 docker-up:
-	docker compose up -d
+	docker compose up --build
 
 docker-down:
 	docker compose down

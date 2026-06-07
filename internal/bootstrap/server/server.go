@@ -32,7 +32,7 @@ func StartServer(cfg *config.ConfigVar) {
 		CaseSensitive:  true,
 		StrictRouting:  true,
 		AppName:        "Biolynq",
-		RequestMethods: []string{"GET", "POST", "PUT", "DELETE"},
+		RequestMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},
 		StructValidator: &StructValidator{
 			validate: validator.New(),
 		},
@@ -42,9 +42,10 @@ func StartServer(cfg *config.ConfigVar) {
 	app.Use(requestid.New())
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://app.biolynq.in"},
+		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000", "https://app.biolynq.in"},
 		AllowCredentials: true,
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 	}))
 
 	api := app.Group("/api")
