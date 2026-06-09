@@ -103,6 +103,8 @@ func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*
 		s.caches.Links.InvalidateAsync(cache.BuildKey("links:profile", profileID))
 	}
 
+	s.userService.InvalidateProfileCacheByProfileID(profileID)
+
 	return &LinkResponse{
 		ID:          link.ID,
 		Title:       link.Title,
@@ -129,6 +131,8 @@ func (s *LinkService) UpdateLink(id uuid.UUID, profileID uuid.UUID, req *UpdateL
 			s.caches.Links.InvalidateAsync(cache.BuildKey("links:profile", profileID))
 		}
 	}
+
+	s.userService.InvalidateProfileCacheByProfileID(profileID)
 	return nil
 }
 
@@ -146,5 +150,7 @@ func (s *LinkService) DeleteLink(id uuid.UUID, profileID uuid.UUID) error {
 			s.caches.Links.InvalidateAsync(cache.BuildKey("links:profile", profileID))
 		}
 	}
+
+	s.userService.InvalidateProfileCacheByProfileID(profileID)
 	return nil
 }

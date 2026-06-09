@@ -25,6 +25,7 @@ type IUserRepository interface {
 	CreateUserFromTempUser(user *models.User, tempUserID uuid.UUID, username string) error
 	UpdateProfile(userID uuid.UUID, data UpdateProfileRequest) (*models.Profile, error)
 	GetProfile(userID uuid.UUID) (*models.Profile, error)
+	GetProfileByID(id uuid.UUID) (*models.Profile, error)
 	GetProfileByUsername(username string) (*models.Profile, error)
 	GetSession(sessionID string) (*models.Session, error)
 }
@@ -129,6 +130,14 @@ func (r *UserRepository) UpdateProfile(userID uuid.UUID, data UpdateProfileReque
 func (r *UserRepository) GetProfile(userID uuid.UUID) (*models.Profile, error) {
 	var profile models.Profile
 	if err := r.db.Where("user_id = ?", userID).First(&profile).Error; err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
+func (r *UserRepository) GetProfileByID(id uuid.UUID) (*models.Profile, error) {
+	var profile models.Profile
+	if err := r.db.Where("id = ?", id).First(&profile).Error; err != nil {
 		return nil, err
 	}
 	return &profile, nil

@@ -34,7 +34,7 @@ func (r *LinkRepository) CreateLink(link *models.Link) error {
 func (r *LinkRepository) GetAllLinks(profileId uuid.UUID) ([]LinkResponse, error) {
 	var links []LinkResponse
 
-	if err := r.db.Model(&models.Link{}).Where("profile_id = ?", profileId).Find(&links).Error; err != nil {
+	if err := r.db.Model(&models.Link{}).Where("profile_id = ?", profileId).Order("position ASC").Find(&links).Error; err != nil {
 		return nil, err
 	}
 

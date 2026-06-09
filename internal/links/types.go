@@ -24,11 +24,11 @@ type CreateLinkRequest struct {
 }
 
 type UpdateLinkRequest struct {
-	Title       string `json:"title" validate:"omitempty"`
-	Description string `json:"description" validate:"omitempty"`
-	URL         string `json:"url" validate:"omitempty,url"`
-	IconURL     string `json:"icon_url" validate:"omitempty,url"`
-	Position    int    `json:"position" validate:"omitempty,number"`
-	IsActive    bool   `json:"is_active" validate:"omitempty,boolean"`
-	IsSocial    bool   `json:"is_social" validate:"omitempty,boolean"`
+	Title       *string `json:"title" validate:"omitempty"`
+	Description *string `json:"description" validate:"omitempty"`
+	URL         *string `json:"url" validate:"omitempty,url"`
+	IconURL     *string `json:"icon_url" validate:"omitempty,url"`
+	Position    *int    `json:"position" validate:"omitempty,number"`
+	IsActive    *bool   `json:"is_active" validate:"omitempty,boolean"`
+	IsSocial    *bool   `json:"is_social" validate:"omitempty,boolean"`
 }

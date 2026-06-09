@@ -28,6 +28,7 @@ type IUserService interface {
 	UpdateProfile(userID uuid.UUID, data UpdateProfileRequest) (*models.Profile, error)
 	GetProfile(userID uuid.UUID) (*models.Profile, error)
 	GetProfileByUsername(username string) (*models.Profile, error)
+	InvalidateProfileCacheByProfileID(profileID uuid.UUID)
 	GetSession(sessionID string) (*models.Session, error)
 	InvalidateSessionCache(sessionIDs ...string)
 	TrackProfileViewAsync(ctx context.Context, profileID uuid.UUID, ip, userAgent, referrer string)
@@ -122,6 +123,21 @@ func (s *UserService) GetProfileByUsername(username string) (*models.Profile, er
 	return s.caches.Profile.Fetch(context.Background(), key, 1*time.Hour, func() (*models.Profile, error) {
 		return s.repo.GetProfileByUsername(username)
 	})
+}
+
+// InvalidateProfileCacheByProfileID evicts profile caches (both username and user ID) by profile ID.
+func (s *UserService) InvalidateProfileCacheByProfileID(profileID uuid.UUID) {
+	if s.caches == nil || s.caches.Profile == nil {
+		return
+	}
+	profile, err := s.repo.GetProfileByID(profileID)
+	if err != nil {
+		return
+	}
+	s.caches.Profile.InvalidateAsync(
+		cache.BuildKey("profile:user", profile.UserID),
+		cache.BuildKey("profile:username", profile.Username),
+	)
 }
 
 // GetSession implements Cache-Aside: check Redis first, then fall back to DB.
