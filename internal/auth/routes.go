@@ -11,6 +11,6 @@ func RegisterRoute(r fiber.Router, handler IAuthHandler, authMiddleware fiber.Ha
 		authRoutes.Get("/google/callback", handler.GoogleCallbackHandler)
 		authRoutes.Post("/register/complete", handler.CompleteRegisterHandler)
 		authRoutes.Post("/check-username", handler.CheckUsernameHandler)
-		authRoutes.Post("/logout", authMiddleware, handler.LogoutHandler)
+		authRoutes.Delete("/logout", authMiddleware, handler.LogoutHandler)
 	}
 }

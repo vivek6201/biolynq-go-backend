@@ -4,9 +4,9 @@ import "github.com/gofiber/fiber/v3"
 
 func RegisterRoute(r fiber.Router, handler IAnalyticsHandler, authMiddleware fiber.Handler) {
 	// Public redirection endpoint
-	publicRoutes := r.Group("/public")
+	publicRoutes := r.Group("/visit")
 	{
-		publicRoutes.Get("/links/:linkID/redirect", handler.RedirectLinkHandler)
+		publicRoutes.Get("/:linkID", handler.RedirectLinkHandler)
 	}
 
 	// Authenticated analytics dashboard endpoints
