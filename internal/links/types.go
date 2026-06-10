@@ -11,6 +11,7 @@ type LinkResponse struct {
 	Position    int       `json:"position"`
 	IsActive    bool      `json:"is_active"`
 	IsSocial    bool      `json:"is_social"`
+	Clicks      int64     `json:"clicks"`
 }
 
 type CreateLinkRequest struct {

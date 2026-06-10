@@ -114,6 +114,7 @@ func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*
 		Position:    link.Position,
 		IsActive:    link.IsActive,
 		IsSocial:    link.IsSocial,
+		Clicks:      0,
 	}, nil
 }
 

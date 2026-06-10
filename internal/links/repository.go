@@ -34,7 +34,15 @@ func (r *LinkRepository) CreateLink(link *models.Link) error {
 func (r *LinkRepository) GetAllLinks(profileId uuid.UUID) ([]LinkResponse, error) {
 	var links []LinkResponse
 
-	if err := r.db.Model(&models.Link{}).Where("profile_id = ?", profileId).Order("position ASC").Find(&links).Error; err != nil {
+	err := r.db.Model(&models.Link{}).
+		Select("links.*, COUNT(analytic_events.id) as clicks").
+		Joins("LEFT JOIN analytic_events ON analytic_events.link_id = links.id AND analytic_events.event_type = ?", models.EventTypeLinkClick).
+		Where("links.profile_id = ?", profileId).
+		Group("links.id").
+		Order("links.position ASC").
+		Scan(&links).Error
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -43,7 +51,13 @@ func (r *LinkRepository) GetAllLinks(profileId uuid.UUID) ([]LinkResponse, error
 
 func (r *LinkRepository) GetLinkById(id uuid.UUID, profileID uuid.UUID) (*LinkResponse, error) {
 	var link LinkResponse
-	if err := r.db.Model(&models.Link{}).Where("id = ? AND profile_id = ?", id, profileID).First(&link).Error; err != nil {
+	err := r.db.Model(&models.Link{}).
+		Select("links.*, COUNT(analytic_events.id) as clicks").
+		Joins("LEFT JOIN analytic_events ON analytic_events.link_id = links.id AND analytic_events.event_type = ?", models.EventTypeLinkClick).
+		Where("links.id = ? AND links.profile_id = ?", id, profileID).
+		Group("links.id").
+		First(&link).Error
+	if err != nil {
 		return nil, err
 	}
 	return &link, nil
