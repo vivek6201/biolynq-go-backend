@@ -13,6 +13,8 @@ type ConfigVar struct {
 	JWT_SECRET           string
 	RESEND_KEY           string
 	GEOIP_DB_PATH        string
+	COOKIE_DOMAIN        string
+	COOKIE_SECURE        bool
 }
 
 func LoadConfig() *ConfigVar {
@@ -27,6 +29,8 @@ func LoadConfig() *ConfigVar {
 		JWT_SECRET:           getEnv("JWT_SECRET", "super-secret-biolynq-auth-jwt-token-key-change-in-production"),
 		RESEND_KEY:           os.Getenv("RESEND_KEY"),
 		GEOIP_DB_PATH:        getEnv("GEOIP_DB_PATH", "resources/geoip/GeoLite2-City.mmdb"),
+		COOKIE_DOMAIN:        getEnv("COOKIE_DOMAIN", ""),
+		COOKIE_SECURE:        os.Getenv("COOKIE_SECURE") == "true",
 	}
 }
 

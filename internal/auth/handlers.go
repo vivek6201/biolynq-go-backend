@@ -77,7 +77,8 @@ func (h *AuthHandler) VerifyOTPHandler(c fiber.Ctx) error {
 		Value:    result.SessionID,
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false, // Set to true if deploying over HTTPS
+		Secure:   h.cfg.COOKIE_SECURE,
+		Domain:   h.cfg.COOKIE_DOMAIN,
 		Expires:  result.ExpiresAt,
 	})
 
@@ -104,7 +105,8 @@ func (h *AuthHandler) GoogleLoginHandler(c fiber.Ctx) error {
 		Value:    state,
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   h.cfg.COOKIE_SECURE,
+		Domain:   h.cfg.COOKIE_DOMAIN,
 		Expires:  time.Now().Add(5 * time.Minute),
 	})
 
@@ -129,7 +131,8 @@ func (h *AuthHandler) GoogleCallbackHandler(c fiber.Ctx) error {
 		Value:    "",
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   h.cfg.COOKIE_SECURE,
+		Domain:   h.cfg.COOKIE_DOMAIN,
 		Expires:  time.Now().Add(-1 * time.Hour),
 	})
 
@@ -158,7 +161,8 @@ func (h *AuthHandler) GoogleCallbackHandler(c fiber.Ctx) error {
 		Value:    result.SessionID,
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   h.cfg.COOKIE_SECURE,
+		Domain:   h.cfg.COOKIE_DOMAIN,
 		Expires:  result.ExpiresAt,
 	})
 
@@ -197,7 +201,8 @@ func (h *AuthHandler) CompleteRegisterHandler(c fiber.Ctx) error {
 		Value:    result.SessionID,
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   h.cfg.COOKIE_SECURE,
+		Domain:   h.cfg.COOKIE_DOMAIN,
 		Expires:  result.ExpiresAt,
 	})
 
@@ -226,7 +231,8 @@ func (h *AuthHandler) LogoutHandler(c fiber.Ctx) error {
 		Value:    "",
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   h.cfg.COOKIE_SECURE,
+		Domain:   h.cfg.COOKIE_DOMAIN,
 		Expires:  time.Now().Add(-24 * time.Hour),
 	})
 

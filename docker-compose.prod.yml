@@ -1,22 +1,4 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: biolynq_postgres_prod
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-biolynq_db}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_prod_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-biolynq_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: biolynq_redis_prod
@@ -39,11 +21,8 @@ services:
       - "${PORT:-8000}:8000"
     env_file: .env
     environment:
-      - DB_URL=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-biolynq_db}?sslmode=disable
       - REDIS_URL=redis:6379
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -53,14 +32,10 @@ services:
     restart: always
     env_file: .env
     environment:
-      - DB_URL=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-biolynq_db}?sslmode=disable
       - REDIS_URL=redis:6379
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
 
 volumes:
-  postgres_prod_data:
   redis_prod_data:
