@@ -48,4 +48,4 @@ COPY migrations ./migrations
 EXPOSE 8000
 
 # Run pending migrations first, then start the server
-CMD ["sh", "-c", "atlas migrate apply --url \"$DB_URL\" --dir \"file://migrations\" && ./server"]
+CMD ["sh", "-c", "atlas migrate apply --url \"$DB_URL\" --dir \"file://migrations\" --allow-dirty && ./server"]

@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	cfg := config.LoadConfig()
 	if err := godotenv.Load(); err != nil {
 		log.Println("Error loading .env file:", err)
 	}
+	cfg := config.LoadConfig()
 	server.StartServer(cfg)
 }
