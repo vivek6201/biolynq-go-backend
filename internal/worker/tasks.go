@@ -20,11 +20,12 @@ type SendEmailPayload struct {
 }
 
 type RecordEventPayload struct {
-	EventType models.EventType `json:"event_type"`
-	ProfileID uuid.UUID        `json:"profile_id"`
-	LinkID    *uuid.UUID       `json:"link_id,omitempty"`
-	IP        string           `json:"ip"`
-	UserAgent string           `json:"user_agent"`
-	Referrer  string           `json:"referrer"`
-	ClickedAt time.Time        `json:"clicked_at"`
+	EventType   models.EventType `json:"event_type"`
+	ProfileID   uuid.UUID        `json:"profile_id"`
+	LinkID      *uuid.UUID       `json:"link_id,omitempty"`
+	ShortLinkID *uuid.UUID       `json:"short_link_id,omitempty"`
+	IP          string           `json:"ip"`
+	UserAgent   string           `json:"user_agent"`
+	Referrer    string           `json:"referrer"`
+	ClickedAt   time.Time        `json:"clicked_at"`
 }

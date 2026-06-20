@@ -27,8 +27,9 @@ type IAnalyticsService interface {
 
 	// Direct public queries
 	GetLinkByID(linkID uuid.UUID) (*models.Link, error)
-	RecordEvent(eventType models.EventType, profileID uuid.UUID, linkID *uuid.UUID, ip, userAgent, referrer string, clickedAt time.Time) error
-	TrackClickAsync(ctx context.Context, link *models.Link, ip, userAgent, referrer string)
+	GetShortLinkBySlug(slug string) (*models.ShortLink, error)
+	RecordEvent(eventType models.EventType, profileID uuid.UUID, linkID *uuid.UUID, shortLinkID *uuid.UUID, ip, userAgent, referrer string, clickedAt time.Time) error
+	TrackClickAsync(ctx context.Context, link *models.Link, shortLinkID *uuid.UUID, ip, userAgent, referrer string)
 }
 
 func NewAnalyticsService(
@@ -175,7 +176,11 @@ func (s *AnalyticsService) GetLinkByID(linkID uuid.UUID) (*models.Link, error) {
 	return s.repo.GetLinkByID(linkID)
 }
 
-func (s *AnalyticsService) RecordEvent(eventType models.EventType, profileID uuid.UUID, linkID *uuid.UUID, ip, userAgentStr, referrer string, clickedAt time.Time) error {
+func (s *AnalyticsService) GetShortLinkBySlug(slug string) (*models.ShortLink, error) {
+	return s.repo.GetShortLinkBySlug(slug)
+}
+
+func (s *AnalyticsService) RecordEvent(eventType models.EventType, profileID uuid.UUID, linkID *uuid.UUID, shortLinkID *uuid.UUID, ip, userAgentStr, referrer string, clickedAt time.Time) error {
 	// 1. Parse User-Agent details
 	ua := user_agent.New(userAgentStr)
 	browserName, _ := ua.Browser()
@@ -214,27 +219,29 @@ func (s *AnalyticsService) RecordEvent(eventType models.EventType, profileID uui
 	}
 
 	event := &models.AnalyticEvent{
-		ID:        uuid.New(),
-		ProfileID: profileID,
-		EventType: eventType,
-		LinkID:    linkID,
-		Referrer:  referrer,
-		ClickedAt: clickedAt,
+		ID:          uuid.New(),
+		ProfileID:   profileID,
+		EventType:   eventType,
+		LinkID:      linkID,
+		ShortLinkID: shortLinkID,
+		Referrer:    referrer,
+		ClickedAt:   clickedAt,
 	}
 
 	// 4. Save inside a single transaction
 	return s.repo.RecordEventTransaction(event, metadata)
 }
 
-func (s *AnalyticsService) TrackClickAsync(ctx context.Context, link *models.Link, ip, userAgent, referrer string) {
+func (s *AnalyticsService) TrackClickAsync(ctx context.Context, link *models.Link, shortLinkID *uuid.UUID, ip, userAgent, referrer string) {
 	payload := &worker.RecordEventPayload{
-		EventType: models.EventTypeLinkClick,
-		ProfileID: link.ProfileID,
-		LinkID:    &link.ID,
-		IP:        ip,
-		UserAgent: userAgent,
-		Referrer:  referrer,
-		ClickedAt: time.Now(),
+		EventType:   models.EventTypeLinkClick,
+		ProfileID:   link.ProfileID,
+		LinkID:      &link.ID,
+		ShortLinkID: shortLinkID,
+		IP:          ip,
+		UserAgent:   userAgent,
+		Referrer:    referrer,
+		ClickedAt:   time.Now(),
 	}
 
 	_ = s.worker.DistributeTaskRecordEvent(ctx, payload)

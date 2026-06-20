@@ -27,6 +27,7 @@ type IAnalyticsRepository interface {
 	GetCityBreakdown(profileID uuid.UUID) ([]GroupedStat, error)
 
 	GetLinkByID(linkID uuid.UUID) (*models.Link, error)
+	GetShortLinkBySlug(slug string) (*models.ShortLink, error)
 	RecordEventTransaction(event *models.AnalyticEvent, metadata *models.VisitorMetadata) error
 }
 
@@ -171,6 +172,15 @@ func (r *AnalyticsRepository) GetLinkByID(linkID uuid.UUID) (*models.Link, error
 		return nil, err
 	}
 	return &link, nil
+}
+
+func (r *AnalyticsRepository) GetShortLinkBySlug(slug string) (*models.ShortLink, error) {
+	var shortLink models.ShortLink
+	err := r.db.First(&shortLink, "slug = ? AND is_active = ?", slug, true).Error
+	if err != nil {
+		return nil, err
+	}
+	return &shortLink, nil
 }
 
 func (r *AnalyticsRepository) RecordEventTransaction(event *models.AnalyticEvent, metadata *models.VisitorMetadata) error {

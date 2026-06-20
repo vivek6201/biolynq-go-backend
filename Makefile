@@ -37,10 +37,10 @@ test:
 	go test -v ./...
 
 docker-up:
-	docker compose up --build
+	docker compose -f docker-compose.yml up --build
 
 docker-down:
-	docker compose down
+	docker compose -f docker-compose.yml down
 
 migration-gen:
 	@if [ -z "$(name)" ]; then \

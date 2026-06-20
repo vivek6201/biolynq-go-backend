@@ -21,6 +21,7 @@ type IAnalyticsHandler interface {
 	GetLinksStatsHandler(c fiber.Ctx) error
 	GetDemographicsHandler(c fiber.Ctx) error
 	RedirectLinkHandler(c fiber.Ctx) error
+	RedirectShortLinkHandler(c fiber.Ctx) error
 }
 
 func NewAnalyticsHandler(service IAnalyticsService, cfg *config.ConfigVar) IAnalyticsHandler {
@@ -117,7 +118,7 @@ func (h *AnalyticsHandler) RedirectLinkHandler(c fiber.Ctx) error {
 	referrer := c.Get("Referer")
 
 	// Trigger asynchronous click tracking task via service
-	h.service.TrackClickAsync(c.Context(), link, ip, userAgent, referrer)
+	h.service.TrackClickAsync(c.Context(), link, nil, ip, userAgent, referrer)
 
 	// Perform 302 Found redirect
 	return c.Redirect().To(link.URL)
@@ -134,4 +135,38 @@ func getClientIP(c fiber.Ctx) string {
 		return realIP
 	}
 	return c.IP()
+}
+
+func (h *AnalyticsHandler) RedirectShortLinkHandler(c fiber.Ctx) error {
+	shortID := c.Params("shortId")
+	if shortID == "" {
+		return utils.SendError(c, fiber.StatusBadRequest, "Short code is required", nil)
+	}
+
+	shortLink, err := h.service.GetShortLinkBySlug(shortID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.SendError(c, fiber.StatusNotFound, "Short link not found", err)
+		}
+		return utils.SendError(c, fiber.StatusInternalServerError, "Failed to resolve short link", err)
+	}
+
+	link, err := h.service.GetLinkByID(shortLink.LinkID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.SendError(c, fiber.StatusNotFound, "Associated link not found", err)
+		}
+		return utils.SendError(c, fiber.StatusInternalServerError, "Failed to resolve associated link", err)
+	}
+
+	// Capture client metadata
+	ip := getClientIP(c)
+	userAgent := c.Get("User-Agent")
+	referrer := c.Get("Referer")
+
+	// Trigger asynchronous click tracking task via service
+	h.service.TrackClickAsync(c.Context(), link, &shortLink.ID, ip, userAgent, referrer)
+
+	// Perform 302 Found redirect
+	return c.Redirect().To(link.URL)
 }

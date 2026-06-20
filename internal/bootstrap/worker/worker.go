@@ -48,7 +48,7 @@ func StartWorker(cfg *config.ConfigVar) {
 		}
 
 		if err := analyticsService.RecordEvent(
-			payload.EventType, payload.ProfileID, payload.LinkID,
+			payload.EventType, payload.ProfileID, payload.LinkID, payload.ShortLinkID,
 			payload.IP, payload.UserAgent, payload.Referrer, payload.ClickedAt,
 		); err != nil {
 			log.Printf("Worker: failed to record event: %v", err)

@@ -19,7 +19,19 @@ type Link struct {
 	Position    int    `json:"position" gorm:"default:0;not null"`
 	IsActive    bool   `json:"is_active" gorm:"default:true;not null"`
 	IsSocial    bool   `json:"is_social" gorm:"default:false;not null"`
+	ShortLinks  []ShortLink `json:"short_links,omitempty" gorm:"foreignKey:LinkID;constraint:OnDelete:CASCADE;"`
 
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
+
+type ShortLink struct {
+	ID        uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	LinkID    uuid.UUID `json:"link_id" gorm:"type:uuid;not null;index"`
+	Link      Link      `json:"-" gorm:"constraint:OnDelete:CASCADE;"`
+	Slug      string    `json:"slug" gorm:"size:100;uniqueIndex;not null"`
+	IsActive  bool      `json:"is_active" gorm:"default:true;not null"`
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+}
+

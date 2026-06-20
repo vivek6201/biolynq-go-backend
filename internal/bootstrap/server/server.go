@@ -47,8 +47,7 @@ func StartServer(cfg *config.ConfigVar) {
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 	}))
 
-	api := app.Group("/api")
-	SetupRoutes(api, db, rdb, cfg)
+	SetupRoutes(app, db, rdb, cfg)
 	if err := app.Listen(":" + cfg.PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

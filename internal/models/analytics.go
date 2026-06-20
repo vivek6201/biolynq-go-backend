@@ -39,6 +39,9 @@ type AnalyticEvent struct {
 	LinkID *uuid.UUID `json:"link_id" gorm:"type:uuid;index"`
 	Link   *Link      `json:"-" gorm:"constraint:OnDelete:CASCADE;"`
 
+	ShortLinkID *uuid.UUID `json:"short_link_id" gorm:"type:uuid;index"`
+	ShortLink   *ShortLink `json:"-" gorm:"constraint:OnDelete:CASCADE;"`
+
 	// Non-nullable foreign key for VisitorMetadata
 	VisitorMetadataID uuid.UUID       `json:"visitor_metadata_id" gorm:"type:uuid;not null;index"`
 	VisitorMetadata   VisitorMetadata `json:"-" gorm:"constraint:OnDelete:CASCADE;"`

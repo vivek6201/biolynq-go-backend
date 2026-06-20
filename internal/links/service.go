@@ -2,12 +2,14 @@ package links
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/vivek6201/biolynq/internal/cache"
 	"github.com/vivek6201/biolynq/internal/models"
 	"github.com/vivek6201/biolynq/internal/users"
+	"github.com/vivek6201/biolynq/internal/utils"
 	"github.com/vivek6201/biolynq/internal/worker"
 )
 
@@ -22,9 +24,14 @@ type ILinkService interface {
 	GetProfileID(userID uuid.UUID) (uuid.UUID, error)
 	GetAllLinks(profileID uuid.UUID) ([]LinkResponse, error)
 	GetLinkByID(id uuid.UUID, profileID uuid.UUID) (*LinkResponse, error)
-	CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*LinkResponse, error)
+	CreateLink(profileID uuid.UUID, req *CreateLinkRequest, baseURL string) (*LinkResponse, error)
 	UpdateLink(id uuid.UUID, profileID uuid.UUID, req *UpdateLinkRequest) error
 	DeleteLink(id uuid.UUID, profileID uuid.UUID) error
+
+	// ShortLink endpoints
+	CreateShortLink(profileID uuid.UUID, linkID uuid.UUID, slug string, baseURL string) (*ShortLinkResponse, error)
+	GetShortLinksByLinkID(profileID uuid.UUID, linkID uuid.UUID, baseURL string) ([]ShortLinkResponse, error)
+	DeleteShortLink(profileID uuid.UUID, linkID uuid.UUID, shortLinkID uuid.UUID) error
 }
 
 // NewLinkService constructs a LinkService with a pluggable cache registry.
@@ -42,6 +49,7 @@ func NewLinkService(
 		caches:      caches,
 	}
 }
+
 
 func (s *LinkService) GetProfileID(userID uuid.UUID) (uuid.UUID, error) {
 	profile, err := s.userService.GetProfile(userID)
@@ -82,7 +90,7 @@ func (s *LinkService) GetLinkByID(id uuid.UUID, profileID uuid.UUID) (*LinkRespo
 }
 
 // CreateLink creates a link and invalidates the list cache asynchronously.
-func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*LinkResponse, error) {
+func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest, baseURL string) (*LinkResponse, error) {
 	link := &models.Link{
 		ID:          uuid.New(),
 		ProfileID:   profileID,
@@ -99,11 +107,24 @@ func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*
 		return nil, err
 	}
 
+	var activeSlug string
+	if req.Shorten != nil && *req.Shorten {
+		shortLinkResponse, err := s.CreateShortLink(profileID, link.ID, req.ShortAlias, baseURL)
+		if err == nil {
+			activeSlug = shortLinkResponse.Slug
+		}
+	}
+
 	if s.caches != nil && s.caches.Links != nil {
 		s.caches.Links.InvalidateAsync(cache.BuildKey("links:profile", profileID))
 	}
 
 	s.userService.InvalidateProfileCacheByProfileID(profileID)
+
+	shortURL := ""
+	if activeSlug != "" {
+		shortURL = baseURL + "/s/" + activeSlug
+	}
 
 	return &LinkResponse{
 		ID:          link.ID,
@@ -115,6 +136,8 @@ func (s *LinkService) CreateLink(profileID uuid.UUID, req *CreateLinkRequest) (*
 		IsActive:    link.IsActive,
 		IsSocial:    link.IsSocial,
 		Clicks:      0,
+		ShortURL:    shortURL,
+		ActiveSlug:  activeSlug,
 	}, nil
 }
 
@@ -155,3 +178,96 @@ func (s *LinkService) DeleteLink(id uuid.UUID, profileID uuid.UUID) error {
 	s.userService.InvalidateProfileCacheByProfileID(profileID)
 	return nil
 }
+
+func (s *LinkService) CreateShortLink(profileID uuid.UUID, linkID uuid.UUID, slug string, baseURL string) (*ShortLinkResponse, error) {
+	owned, err := s.repo.VerifyLinkOwnership(linkID, profileID)
+	if err != nil {
+		return nil, err
+	}
+	if !owned {
+		return nil, errors.New("unauthorized: link does not belong to profile")
+	}
+
+	if slug == "" {
+		generated, err := utils.GenerateRandomString(8)
+		if err != nil {
+			return nil, err
+		}
+		slug = generated
+	}
+
+	shortLink := &models.ShortLink{
+		ID:       uuid.New(),
+		LinkID:   linkID,
+		Slug:     slug,
+		IsActive: true,
+	}
+
+	if err := s.repo.CreateShortLink(shortLink); err != nil {
+		return nil, err
+	}
+
+	if s.caches != nil && s.caches.Links != nil {
+		s.caches.Links.InvalidateAsync(cache.BuildKey("links:profile", profileID))
+	}
+	s.userService.InvalidateProfileCacheByProfileID(profileID)
+
+	return &ShortLinkResponse{
+		ID:        shortLink.ID,
+		LinkID:    shortLink.LinkID,
+		Slug:      shortLink.Slug,
+		ShortURL:  baseURL + "/s/" + shortLink.Slug,
+		IsActive:  shortLink.IsActive,
+		CreatedAt: shortLink.CreatedAt,
+	}, nil
+}
+
+func (s *LinkService) GetShortLinksByLinkID(profileID uuid.UUID, linkID uuid.UUID, baseURL string) ([]ShortLinkResponse, error) {
+	owned, err := s.repo.VerifyLinkOwnership(linkID, profileID)
+	if err != nil {
+		return nil, err
+	}
+	if !owned {
+		return nil, errors.New("unauthorized: link does not belong to profile")
+	}
+
+	dbShortLinks, err := s.repo.GetShortLinksByLinkID(linkID)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]ShortLinkResponse, len(dbShortLinks))
+	for i, sl := range dbShortLinks {
+		responses[i] = ShortLinkResponse{
+			ID:        sl.ID,
+			LinkID:    sl.LinkID,
+			Slug:      sl.Slug,
+			ShortURL:  baseURL + "/s/" + sl.Slug,
+			IsActive:  sl.IsActive,
+			CreatedAt: sl.CreatedAt,
+		}
+	}
+	return responses, nil
+}
+
+func (s *LinkService) DeleteShortLink(profileID uuid.UUID, linkID uuid.UUID, shortLinkID uuid.UUID) error {
+	owned, err := s.repo.VerifyLinkOwnership(linkID, profileID)
+	if err != nil {
+		return err
+	}
+	if !owned {
+		return errors.New("unauthorized: link does not belong to profile")
+	}
+
+	if err := s.repo.DeleteShortLink(shortLinkID); err != nil {
+		return err
+	}
+
+	if s.caches != nil && s.caches.Links != nil {
+		s.caches.Links.InvalidateAsync(cache.BuildKey("links:profile", profileID))
+	}
+	s.userService.InvalidateProfileCacheByProfileID(profileID)
+
+	return nil
+}
+

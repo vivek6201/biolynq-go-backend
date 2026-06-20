@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(r fiber.Router, db *gorm.DB, rdb *redis.Client, cfg *config.ConfigVar) {
+func SetupRoutes(app *fiber.App, db *gorm.DB, rdb *redis.Client, cfg *config.ConfigVar) {
 	redisOpts := asynq.RedisClientOpt{Addr: cfg.REDIS_URL}
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpts)
 
@@ -42,7 +42,11 @@ func SetupRoutes(r fiber.Router, db *gorm.DB, rdb *redis.Client, cfg *config.Con
 	analyticsService := analytics.NewAnalyticsService(analyticsRepo, userService, taskDistributor, geoipService)
 	analyticsHandler := analytics.NewAnalyticsHandler(analyticsService, cfg)
 
-	v1 := r.Group("v1")
+	// ── ShortLink Redirect Route at Root ──────────────────────────────────────
+	app.Get("/s/:shortId", analyticsHandler.RedirectShortLinkHandler)
+
+	api := app.Group("/api")
+	v1 := api.Group("/v1")
 	{
 		users.RegisterRoute(v1, userHandler, authMiddleware)
 		auth.RegisterRoute(v1, authHandler, authMiddleware)

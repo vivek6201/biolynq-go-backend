@@ -11,4 +11,12 @@ func RegisterRoute(r fiber.Router, handler ILinkHandler, authMiddleware fiber.Ha
 		linksRoutes.Put("/:linkID", handler.UpdateLinkHandler)
 		linksRoutes.Delete("/:linkID", handler.DeleteLinkHandler)
 	}
+
+	// ShortLinks routes
+	shortRoutes := r.Group("/short", authMiddleware)
+	{
+		shortRoutes.Post("/:linkID", handler.CreateShortLinkHandler)
+		shortRoutes.Get("/:linkID", handler.GetShortLinksHandler)
+		shortRoutes.Delete("/:linkID/:sid", handler.DeleteShortLinkHandler)
+	}
 }
