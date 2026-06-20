@@ -45,10 +45,14 @@ echo " Build successful! Images created locally:"
 echo " - $DOCKER_USER/biolynq-server:$TAG"
 echo " - $DOCKER_USER/biolynq-worker:$TAG"
 echo "=========================================================="
-echo ""
-echo "To push these images to Docker Hub, please make sure you are logged in."
-echo "Running: docker login"
-docker login
+
+if [ "$CI" != "true" ]; then
+    echo "To push these images to Docker Hub, please make sure you are logged in."
+    echo "Running: docker login"
+    docker login
+else
+    echo "Running in CI environment, skipping interactive docker login."
+fi
 
 echo ""
 echo "Pushing API Server Image..."
