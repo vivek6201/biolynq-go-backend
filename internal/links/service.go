@@ -31,7 +31,9 @@ type ILinkService interface {
 	// ShortLink endpoints
 	CreateShortLink(profileID uuid.UUID, linkID uuid.UUID, slug string, baseURL string) (*ShortLinkResponse, error)
 	GetShortLinksByLinkID(profileID uuid.UUID, linkID uuid.UUID, baseURL string) ([]ShortLinkResponse, error)
-	DeleteShortLink(profileID uuid.UUID, linkID uuid.UUID, shortLinkID uuid.UUID) error
+	DeleteShortLinkBySlug(profileID uuid.UUID, linkID uuid.UUID, slug string) error
+	UpdateShortLinkBySlug(profileID uuid.UUID, linkID uuid.UUID, slug string, req *UpdateShortLinkRequest, baseURL string) (*ShortLinkResponse, error)
+	CheckSlugAvailable(slug string) (bool, error)
 }
 
 // NewLinkService constructs a LinkService with a pluggable cache registry.
@@ -250,7 +252,7 @@ func (s *LinkService) GetShortLinksByLinkID(profileID uuid.UUID, linkID uuid.UUI
 	return responses, nil
 }
 
-func (s *LinkService) DeleteShortLink(profileID uuid.UUID, linkID uuid.UUID, shortLinkID uuid.UUID) error {
+func (s *LinkService) DeleteShortLinkBySlug(profileID uuid.UUID, linkID uuid.UUID, slug string) error {
 	owned, err := s.repo.VerifyLinkOwnership(linkID, profileID)
 	if err != nil {
 		return err
@@ -259,7 +261,7 @@ func (s *LinkService) DeleteShortLink(profileID uuid.UUID, linkID uuid.UUID, sho
 		return errors.New("unauthorized: link does not belong to profile")
 	}
 
-	if err := s.repo.DeleteShortLink(shortLinkID); err != nil {
+	if err := s.repo.DeleteShortLinkBySlug(linkID, slug); err != nil {
 		return err
 	}
 
@@ -269,5 +271,49 @@ func (s *LinkService) DeleteShortLink(profileID uuid.UUID, linkID uuid.UUID, sho
 	s.userService.InvalidateProfileCacheByProfileID(profileID)
 
 	return nil
+}
+
+func (s *LinkService) UpdateShortLinkBySlug(profileID uuid.UUID, linkID uuid.UUID, slug string, req *UpdateShortLinkRequest, baseURL string) (*ShortLinkResponse, error) {
+	owned, err := s.repo.VerifyLinkOwnership(linkID, profileID)
+	if err != nil {
+		return nil, err
+	}
+	if !owned {
+		return nil, errors.New("unauthorized: link does not belong to profile")
+	}
+
+	err = s.repo.UpdateShortLinkBySlug(linkID, slug, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.caches != nil && s.caches.Links != nil {
+		s.caches.Links.InvalidateAsync(cache.BuildKey("links:profile", profileID))
+	}
+	s.userService.InvalidateProfileCacheByProfileID(profileID)
+
+	// Since req.Slug might have been updated, we fetch the updated one using the new slug if provided
+	lookupSlug := slug
+	if req.Slug != nil {
+		lookupSlug = *req.Slug
+	}
+
+	dbShortLink, err := s.repo.GetShortLinkBySlugAndLinkID(linkID, lookupSlug)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ShortLinkResponse{
+		ID:        dbShortLink.ID,
+		LinkID:    dbShortLink.LinkID,
+		Slug:      dbShortLink.Slug,
+		ShortURL:  baseURL + "/s/" + dbShortLink.Slug,
+		IsActive:  dbShortLink.IsActive,
+		CreatedAt: dbShortLink.CreatedAt,
+	}, nil
+}
+
+func (s *LinkService) CheckSlugAvailable(slug string) (bool, error) {
+	return s.repo.CheckSlugAvailable(slug)
 }
 

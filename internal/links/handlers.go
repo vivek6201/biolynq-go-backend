@@ -22,6 +22,8 @@ type ILinkHandler interface {
 	CreateShortLinkHandler(ctx fiber.Ctx) error
 	GetShortLinksHandler(ctx fiber.Ctx) error
 	DeleteShortLinkHandler(ctx fiber.Ctx) error
+	UpdateShortLinkHandler(ctx fiber.Ctx) error
+	CheckSlugHandler(ctx fiber.Ctx) error
 }
 
 func NewLinkHandler(service ILinkService, cfg *config.ConfigVar) ILinkHandler {
@@ -272,10 +274,9 @@ func (h *LinkHandler) DeleteShortLinkHandler(ctx fiber.Ctx) error {
 		return utils.SendError(ctx, fiber.StatusBadRequest, "Invalid link ID format", err)
 	}
 
-	shortLinkIDStr := ctx.Params("shortLinkID")
-	shortLinkID, err := uuid.Parse(shortLinkIDStr)
-	if err != nil {
-		return utils.SendError(ctx, fiber.StatusBadRequest, "Invalid short link ID format", err)
+	slug := ctx.Params("slug")
+	if slug == "" {
+		return utils.SendError(ctx, fiber.StatusBadRequest, "Slug is required", nil)
 	}
 
 	profileID, err := h.service.GetProfileID(userID)
@@ -283,10 +284,68 @@ func (h *LinkHandler) DeleteShortLinkHandler(ctx fiber.Ctx) error {
 		return utils.SendError(ctx, fiber.StatusNotFound, "Profile not found", err)
 	}
 
-	err = h.service.DeleteShortLink(profileID, linkID, shortLinkID)
+	err = h.service.DeleteShortLinkBySlug(profileID, linkID, slug)
 	if err != nil {
 		return utils.SendError(ctx, fiber.StatusInternalServerError, "Failed to delete short link", err)
 	}
 
 	return utils.SendSuccess(ctx, fiber.StatusOK, "Short link deleted successfully", nil)
+}
+
+func (h *LinkHandler) UpdateShortLinkHandler(ctx fiber.Ctx) error {
+	userIDStr, ok := ctx.Locals("userID").(string)
+	if !ok || userIDStr == "" {
+		return utils.SendError(ctx, fiber.StatusUnauthorized, "Unauthorized", nil)
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return utils.SendError(ctx, fiber.StatusBadRequest, "Invalid user ID format", err)
+	}
+
+	linkIDStr := ctx.Params("linkID")
+	linkID, err := uuid.Parse(linkIDStr)
+	if err != nil {
+		return utils.SendError(ctx, fiber.StatusBadRequest, "Invalid link ID format", err)
+	}
+
+	slug := ctx.Params("slug")
+	if slug == "" {
+		return utils.SendError(ctx, fiber.StatusBadRequest, "Slug is required", nil)
+	}
+
+	var req UpdateShortLinkRequest
+	if err := ctx.Bind().JSON(&req); err != nil {
+		return utils.SendError(ctx, fiber.StatusBadRequest, "Invalid request payload", err)
+	}
+
+	profileID, err := h.service.GetProfileID(userID)
+	if err != nil {
+		return utils.SendError(ctx, fiber.StatusNotFound, "Profile not found", err)
+	}
+
+	shortLink, err := h.service.UpdateShortLinkBySlug(profileID, linkID, slug, &req, ctx.BaseURL())
+	if err != nil {
+		return utils.SendError(ctx, fiber.StatusInternalServerError, "Failed to update short link", err)
+	}
+
+	return utils.SendSuccess(ctx, fiber.StatusOK, "Short link updated successfully", shortLink)
+}
+
+func (h *LinkHandler) CheckSlugHandler(ctx fiber.Ctx) error {
+	var req CheckSlugRequest
+	if err := ctx.Bind().JSON(&req); err != nil {
+		return utils.SendError(ctx, fiber.StatusBadRequest, "Invalid request payload", err)
+	}
+
+	available, err := h.service.CheckSlugAvailable(req.Slug)
+	if err != nil {
+		return utils.SendError(ctx, fiber.StatusInternalServerError, "Failed to check slug availability", err)
+	}
+
+	if !available {
+		return utils.SendError(ctx, fiber.StatusBadRequest, "Slug is taken", nil)
+	}
+
+	return utils.SendSuccess(ctx, fiber.StatusOK, "Slug is Available", nil)
 }

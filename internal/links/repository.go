@@ -22,8 +22,11 @@ type ILinkRepository interface {
 	// ShortLink repository methods
 	CreateShortLink(shortLink *models.ShortLink) error
 	GetShortLinksByLinkID(linkID uuid.UUID) ([]models.ShortLink, error)
-	DeleteShortLink(shortLinkID uuid.UUID) error
+	DeleteShortLinkBySlug(linkID uuid.UUID, slug string) error
 	VerifyLinkOwnership(linkID uuid.UUID, profileID uuid.UUID) (bool, error)
+	UpdateShortLinkBySlug(linkID uuid.UUID, slug string, req *UpdateShortLinkRequest) error
+	GetShortLinkBySlugAndLinkID(linkID uuid.UUID, slug string) (*models.ShortLink, error)
+	CheckSlugAvailable(slug string) (bool, error)
 }
 
 func NewLinkRepository(db *gorm.DB, rdb *redis.Client) ILinkRepository {
@@ -97,14 +100,61 @@ func (r *LinkRepository) GetShortLinksByLinkID(linkID uuid.UUID) ([]models.Short
 	return shortLinks, err
 }
 
-func (r *LinkRepository) DeleteShortLink(shortLinkID uuid.UUID) error {
-	return r.db.Delete(&models.ShortLink{}, "id = ?", shortLinkID).Error
+func (r *LinkRepository) DeleteShortLinkBySlug(linkID uuid.UUID, slug string) error {
+	return r.db.Where("link_id = ? AND slug = ?", linkID, slug).Delete(&models.ShortLink{}).Error
 }
 
 func (r *LinkRepository) VerifyLinkOwnership(linkID uuid.UUID, profileID uuid.UUID) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.Link{}).Where("id = ? AND profile_id = ?", linkID, profileID).Count(&count).Error
 	return count > 0, err
+}
+
+func (r *LinkRepository) UpdateShortLinkBySlug(linkID uuid.UUID, slug string, req *UpdateShortLinkRequest) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var shortLink models.ShortLink
+		if err := tx.First(&shortLink, "link_id = ? AND slug = ?", linkID, slug).Error; err != nil {
+			return err
+		}
+
+		if req.IsActive != nil && *req.IsActive {
+			// Deactivate other short links for this link
+			if err := tx.Model(&models.ShortLink{}).Where("link_id = ? AND id != ?", linkID, shortLink.ID).Update("is_active", false).Error; err != nil {
+				return err
+			}
+		}
+
+		// Apply updates
+		updates := make(map[string]interface{})
+		if req.Slug != nil {
+			updates["slug"] = *req.Slug
+		}
+		if req.IsActive != nil {
+			updates["is_active"] = *req.IsActive
+		}
+
+		if len(updates) > 0 {
+			if err := tx.Model(&models.ShortLink{}).Where("id = ?", shortLink.ID).Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (r *LinkRepository) GetShortLinkBySlugAndLinkID(linkID uuid.UUID, slug string) (*models.ShortLink, error) {
+	var shortLink models.ShortLink
+	err := r.db.First(&shortLink, "link_id = ? AND slug = ?", linkID, slug).Error
+	if err != nil {
+		return nil, err
+	}
+	return &shortLink, nil
+}
+
+func (r *LinkRepository) CheckSlugAvailable(slug string) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.ShortLink{}).Where("slug = ?", slug).Count(&count).Error
+	return count == 0, err
 }
 
 

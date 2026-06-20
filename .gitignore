@@ -29,6 +29,7 @@ go.work.sum
 
 # temp dir
 tmp/
+bin/
 
 # Editor/IDE
 # .idea/

@@ -55,3 +55,12 @@ type CreateShortLinkRequest struct {
 	Slug string `json:"slug" validate:"omitempty,min=3,max=50"`
 }
 
+type UpdateShortLinkRequest struct {
+	Slug     *string `json:"slug" validate:"omitempty,min=3,max=50"`
+	IsActive *bool   `json:"is_active" validate:"omitempty,boolean"`
+}
+
+type CheckSlugRequest struct {
+	Slug string `json:"slug" validate:"required,min=3,max=50"`
+}
+
