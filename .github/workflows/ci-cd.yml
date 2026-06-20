@@ -6,6 +6,9 @@ on:
       - main
       - dev
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+
 jobs:
   check-commit:
     name: Check Commit (Build & Compile)
@@ -17,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
           cache: true
 
       - name: Build Go Code
@@ -51,7 +54,7 @@ jobs:
           push: false
 
   build-and-push:
-    name: Build & Push to Docker Hub
+    name: Build & Push to Docker Hub & Deploy
     needs: check-commit
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -62,7 +65,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
           cache: true
 
       - name: Set up QEMU
@@ -83,3 +86,16 @@ jobs:
         run: |
           chmod +x scripts/build-and-push.sh
           ./scripts/build-and-push.sh "${{ secrets.DOCKER_HUB_USERNAME }}" "latest"
+
+      - name: Deploy to Remote Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}" TAG="latest" docker compose -f docker-compose.prod.yml pull
+            DOCKER_USER="${{ secrets.DOCKER_HUB_USERNAME }}" TAG="latest" docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
