@@ -108,6 +108,19 @@ func (h *UserHandler) GetPublicProfileHandler(c fiber.Ctx) error {
 		return utils.SendError(c, fiber.StatusInternalServerError, "Failed to fetch profile", err)
 	}
 
+	// Dynamically populate short URLs and clear the raw short links list
+	baseURL := c.BaseURL()
+	for i := range profile.Links {
+		for _, sl := range profile.Links[i].ShortLinks {
+			if sl.IsActive {
+				profile.Links[i].ShortURL = baseURL + "/s/" + sl.Slug
+				break
+			}
+		}
+		// Clear ShortLinks so they are omitted from the JSON serialization response
+		profile.Links[i].ShortLinks = nil
+	}
+
 	// Capture client metadata and trigger asynchronous profile view event
 	ip := getClientIP(c)
 	userAgent := c.Get("User-Agent")

@@ -147,7 +147,7 @@ func (r *UserRepository) GetProfileByUsername(username string) (*models.Profile,
 	var profile models.Profile
 	err := r.db.Preload("Links", func(db *gorm.DB) *gorm.DB {
 		return db.Where("is_active = ?", true).Order("position ASC")
-	}).Where("username = ?", username).First(&profile).Error
+	}).Preload("Links.ShortLinks", "is_active = ?", true).Where("username = ?", username).First(&profile).Error
 
 	if err != nil {
 		return nil, err
