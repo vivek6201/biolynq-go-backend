@@ -36,6 +36,12 @@ func StartServer(cfg *config.ConfigVar) {
 		StructValidator: &StructValidator{
 			validate: validator.New(),
 		},
+		TrustProxy: true,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Loopback:   true,
+			Private:    true,
+			LinkLocal:  true,
+		},
 	})
 
 	app.Use(recover.New())
